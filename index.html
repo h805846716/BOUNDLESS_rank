@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boundless KOL 简化排行榜 - Kaito数据</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* 语言切换按钮样式 */
+        .lang-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            backdrop-filter: blur(10px);
+            margin-right: 15px;
+        }
+
+        .lang-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .lang-toggle.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+
+        .main-content {
+            padding: 40px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .page-title {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .page-title h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .controls {
+            margin-bottom: 30px;
+        }
+
+
+
+        .period-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .period-tab {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .period-tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .period-tab.active {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-box {
+            max-width: 400px;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            color: white;
+            text-align: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            padding: 60px 0;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error, .warning {
+            background: rgba(220, 53, 69, 0.1);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .warning {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        .leaderboard-wrapper {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            padding: 0 20px;
+            box-sizing: border-box;
+            transform: translateX(-24.61%);
+        }
+
+        .leaderboards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 780px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .leaderboard-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column-header {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px 6px 0 0;
+            font-weight: bold;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-bottom: none;
+        }
+
+        .leaderboard {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 0 0 8px 8px;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: none;
+            flex: 1;
+        }
+
+        .leaderboard-header {
+            display: grid;
+            grid-template-columns: 35px 35px 1fr 80px 60px;
+            gap: 8px;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: white;
+            font-size: 11px;
+        }
+
+        .kol-row {
+            display: grid;
+            grid-template-columns: 35px 35px 1fr 80px 60px;
+            gap: 8px;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            transition: all 0.3s ease;
+            align-items: center;
+        }
+
+        .kol-row:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .rank {
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+        }
+
+        .top-3 .rank {
+            color: #FFD700;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            object-fit: cover;
+        }
+
+        .user-info {
+            color: white;
+        }
+
+        .user-name {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .user-username {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+
+        .mindshare-cell {
+            text-align: center;
+        }
+
+        .mindshare-value {
+            font-size: 11px;
+            font-weight: bold;
+            color: #4FACFE;
+            margin-bottom: 2px;
+        }
+
+        .mindshare-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .mindshare-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+            border-radius: 2px;
+            transition: width 0.8s ease;
+        }
+
+        .mention-count {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .no-results {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 60px 20px;
+            font-size: 18px;
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 40px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 40px;
+        }
+
+        @media (max-width: 1000px) {
+            .leaderboard-wrapper {
+                padding: 0 15px;
+                transform: translateX(0);
+            }
+            
+            .leaderboards-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                max-width: 600px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .leaderboard-wrapper {
+                padding: 0 10px;
+                transform: translateX(0);
+            }
+            
+            .leaderboard-header,
+            .kol-row {
+                grid-template-columns: 35px 35px 1fr 70px 60px;
+                gap: 8px;
+                padding: 10px 12px;
+                font-size: 12px;
+            }
+
+            .avatar {
+                width: 32px;
+                height: 32px;
+            }
+
+            .user-name {
+                font-size: 13px;
+            }
+
+            .user-username {
+                font-size: 11px;
+            }
+
+            .mindshare-value,
+            .mention-count {
+                font-size: 12px;
+            }
+
+            .period-tabs {
+                gap: 5px;
+            }
+
+            .period-tab {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .column-header {
+                font-size: 13px;
+                padding: 10px;
+            }
+
+            .leaderboard {
+                padding: 12px;
+            }
+
+            .page-title h1 {
+                font-size: 24px;
+            }
+
+            .page-subtitle {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="#" class="logo" data-key="logo">🍓 Boundless 简化排行榜</a>
+                <div style="display: flex; align-items: center;">
+                    <button class="lang-toggle" onclick="toggleLanguage()">
+                        <span id="langIcon">🌐</span>
+                        <span id="langText">EN</span>
+                    </button>
+                    <button class="refresh-btn" onclick="loadData()">
+                        <span id="refresh-text" data-key="refresh">🔄 刷新数据</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-title">
+                <h1 data-key="pageTitle">BOUNDLESS 排行榜</h1>
+                <p class="page-subtitle">制作人：<a href="https://x.com/GXingPing" target="_blank" style="color: inherit; text-decoration: none;">金灰</a></p>
+            </div>
+
+            <div class="controls">
+                <div class="period-tabs">
+                    <button class="period-tab" data-period="7d" data-key="period7d">7天</button>
+                    <button class="period-tab" data-period="30d" data-key="period30d">30天</button>
+                    <button class="period-tab active" data-period="3m" data-key="period3m">3个月</button>
+                    <button class="period-tab" data-period="6m" data-key="period6m">6个月</button>
+                    <button class="period-tab" data-period="12m" data-key="period12m">12个月</button>
+                </div>
+
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" data-key-placeholder="searchPlaceholder" placeholder="搜索用户..." id="searchInput">
+                </div>
+            </div>
+
+            <div id="loadingState" class="loading">
+                <div class="loading-spinner"></div>
+                <p data-key="loading">正在加载数据...</p>
+            </div>
+
+            <div id="warningState" class="warning" style="display: none;">
+                <span data-key="warning">⚠️ API 连接失败，正在显示示例数据。</span>
+            </div>
+
+            <div id="errorState" class="error" style="display: none;">
+                <h3 data-key="errorTitle">⚠️ 数据加载失败</h3>
+                <p id="errorMessage"></p>
+                <button class="refresh-btn" onclick="loadData()" style="margin-top: 15px;">
+                    <span data-key="retry">重试</span>
+                </button>
+            </div>
+
+            <div id="leaderboardContainer" style="display: none;">
+                <div class="leaderboard-wrapper">
+                    <div class="leaderboards-grid">
+                    <div class="leaderboard-column">
+                        <div class="column-header" data-key="legacyTitle">📊 老榜单</div>
+                        <div class="leaderboard">
+                            <div class="leaderboard-header">
+                                <div data-key="rank">排名</div>
+                                <div data-key="avatar">头像</div>
+                                <div data-key="userInfo">用户信息</div>
+                                <div data-key="mindshare">心智份额</div>
+                                <div data-key="mentions">提及次数</div>
+                            </div>
+                            <div id="leaderboard-legacy"></div>
+                        </div>
+                    </div>
+
+                    <div class="leaderboard-column">
+                        <div class="column-header" data-key="tier1Title">🤡 新榜单（满足门槛）</div>
+                        <div class="leaderboard">
+                            <div class="leaderboard-header">
+                                <div data-key="rank">排名</div>
+                                <div data-key="avatar">头像</div>
+                                <div data-key="userInfo">用户信息</div>
+                                <div data-key="mindshare">心智份额</div>
+                                <div data-key="mentions">提及次数</div>
+                            </div>
+                            <div id="leaderboard-tier1"></div>
+                        </div>
+                    </div>
+
+                    <div class="leaderboard-column">
+                        <div class="column-header" data-key="tier2Title">🌐 广泛社区（未满足门槛）</div>
+                        <div class="leaderboard">
+                            <div class="leaderboard-header">
+                                <div data-key="rank">排名</div>
+                                <div data-key="avatar">头像</div>
+                                <div data-key="userInfo">用户信息</div>
+                                <div data-key="mindshare">心智份额</div>
+                                <div data-key="mentions">提及次数</div>
+                            </div>
+                            <div id="leaderboard-tier2"></div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div id="noResults" class="no-results" style="display: none;">
+                <p>🔍 没有找到匹配的结果</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+                            <p>数据来源: Kaito AI • BOUNDLESS 排行榜</p>
+        </div>
+    </footer>
+
+    <script>
+        let allDataLegacy = [];
+        let allDataTier1 = [];
+        let allDataTier2 = [];
+        let filteredDataLegacy = [];
+        let filteredDataTier1 = [];
+        let filteredDataTier2 = [];
+        let currentPeriod = '3m';
+
+        // API 配置
+        const API_CONFIGS = {
+            'legacy': {
+                '7d': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=7d&topic_id=BOUNDLESS&top_n=100&customized_community=customized&community_yaps=true',
+                '30d': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=30d&topic_id=BOUNDLESS&top_n=100&customized_community=customized&community_yaps=true',
+                '3m': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=3m&topic_id=BOUNDLESS&top_n=100&customized_community=customized&community_yaps=true',
+                '6m': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=6m&topic_id=BOUNDLESS&top_n=100&customized_community=customized&community_yaps=true',
+                '12m': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=12m&topic_id=BOUNDLESS&top_n=100&customized_community=customized&community_yaps=true'
+            },
+            'tier1': {
+                '7d': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=7d&topic_id=BOUNDLESS&top_n=100&community_tier=tier1&customized_community=customized&community_yaps=true',
+                '30d': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=30d&topic_id=BOUNDLESS&top_n=100&community_tier=tier1&customized_community=customized&community_yaps=true',
+                '3m': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=3m&topic_id=BOUNDLESS&top_n=100&community_tier=tier1&customized_community=customized&community_yaps=true',
+                '6m': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=6m&topic_id=BOUNDLESS&top_n=100&community_tier=tier1&customized_community=customized&community_yaps=true',
+                '12m': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=12m&topic_id=BOUNDLESS&top_n=100&community_tier=tier1&customized_community=customized&community_yaps=true'
+            },
+            'tier2': {
+                '7d': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=7d&topic_id=BOUNDLESS&top_n=100&community_tier=tier2&customized_community=customized&community_yaps=true',
+                '30d': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=30d&topic_id=BOUNDLESS&top_n=100&community_tier=tier2&customized_community=customized&community_yaps=true',
+                '3m': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=3m&topic_id=BOUNDLESS&top_n=100&community_tier=tier2&customized_community=customized&community_yaps=true',
+                '6m': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=6m&topic_id=BOUNDLESS&top_n=100&community_tier=tier2&customized_community=customized&community_yaps=true',
+                '12m': 'https://hub.kaito.ai/api/v1/gateway/ai/kol/mindshare/top-leaderboard?duration=12m&topic_id=BOUNDLESS&top_n=100&community_tier=tier2&customized_community=customized&community_yaps=true'
+            }
+        };
+
+        // 备用数据
+        const SAMPLE_DATA = [
+            {"rank":"1","name":"zkSanti","username":"zksanca","icon":"https://asset.cdn.kaito.ai/twitter-user-profile-img/1711840926249689088.jpg","mindshare":0.008344,"mention_count":"52"},
+            {"rank":"2","name":"HexNom","username":"HexNom","icon":"https://asset.cdn.kaito.ai/twitter-user-profile-img/1011344144739065856.jpg","mindshare":0.007388,"mention_count":"92"},
+            {"rank":"3","name":"kermit","username":"kermit5329","icon":"https://asset.cdn.kaito.ai/twitter-user-profile-img/2460348392.jpg","mindshare":0.004966,"mention_count":"3"}
+        ];
+
+        // 安全获取数值
+        function safeGetNumber(value, defaultValue = 0) {
+            if (value === undefined || value === null) return defaultValue;
+            const num = Number(value);
+            return isNaN(num) ? defaultValue : num;
+        }
+
+        // 安全获取字符串
+        function safeGetString(value, defaultValue = '') {
+            return (value === undefined || value === null) ? defaultValue : String(value);
+        }
+
+        // 格式化数字
+        function formatNumber(num) {
+            const safeNum = safeGetNumber(num);
+            if (safeNum === 0) return '0';
+            if (safeNum >= 1000000) return (safeNum / 1000000).toFixed(1) + 'M';
+            if (safeNum >= 1000) return (safeNum / 1000).toFixed(1) + 'K';
+            return safeNum.toString();
+        }
+
+        // 格式化百分比
+        function formatPercentage(num) {
+            const safeNum = safeGetNumber(num);
+            return (safeNum * 100).toFixed(4) + '%';
+        }
+
+        // 规范化数据
+        function normalizeKOLData(kol, index) {
+            let rank = safeGetNumber(kol.rank);
+            if (rank === 0 || rank > 1000) {
+                rank = index + 1;
+            }
+
+            return {
+                rank: rank,
+                name: safeGetString(kol.name, '未知用户'),
+                username: safeGetString(kol.username, 'unknown'),
+                icon: safeGetString(kol.icon),
+                mindshare: safeGetNumber(kol.mindshare),
+                mention_count: safeGetNumber(kol.mention_count),
+                user_id: safeGetString(kol.user_id)
+            };
+        }
+
+        // 创建排行榜行
+        function createKOLRow(kol) {
+            const isTop3 = kol.rank <= 3;
+            const mindsharePercent = Math.min(kol.mindshare * 100 * 100, 100);
+
+            return `
+                <div class="kol-row ${isTop3 ? 'top-3' : ''}">
+                    <div class="rank">#${kol.rank}</div>
+                    <div>
+                        <img src="${kol.icon}" alt="${kol.name}" class="avatar" 
+                             onerror="this.src='data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;50&quot; height=&quot;50&quot;><rect width=&quot;50&quot; height=&quot;50&quot; fill=&quot;%23ddd&quot;/></svg>'">
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">${kol.name}</div>
+                        <div class="user-username">@${kol.username}</div>
+                    </div>
+                    <div class="mindshare-cell">
+                        <div class="mindshare-value">${formatPercentage(kol.mindshare)}</div>
+                        <div class="mindshare-bar">
+                            <div class="mindshare-fill" style="width: ${mindsharePercent}%"></div>
+                        </div>
+                    </div>
+                    <div class="mention-count">${formatNumber(kol.mention_count)}</div>
+                </div>
+            `;
+        }
+
+        // 渲染排行榜
+        function renderLeaderboard(data, containerId) {
+            const leaderboard = document.getElementById(containerId);
+            leaderboard.innerHTML = data.map(createKOLRow).join('');
+        }
+
+        // 渲染所有排行榜
+        function renderAllLeaderboards() {
+            const hasData = filteredDataLegacy.length > 0 || filteredDataTier1.length > 0 || filteredDataTier2.length > 0;
+            
+            if (!hasData) {
+                document.getElementById('noResults').style.display = 'block';
+                document.getElementById('leaderboardContainer').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('noResults').style.display = 'none';
+            document.getElementById('leaderboardContainer').style.display = 'block';
+            
+            renderLeaderboard(filteredDataLegacy, 'leaderboard-legacy');
+            renderLeaderboard(filteredDataTier1, 'leaderboard-tier1');
+            renderLeaderboard(filteredDataTier2, 'leaderboard-tier2');
+        }
+
+        // 搜索功能
+        function filterData(searchTerm) {
+            if (!searchTerm.trim()) {
+                filteredDataLegacy = [...allDataLegacy];
+                filteredDataTier1 = [...allDataTier1];
+                filteredDataTier2 = [...allDataTier2];
+            } else {
+                const term = searchTerm.toLowerCase();
+                filteredDataLegacy = allDataLegacy.filter(kol => 
+                    kol.name.toLowerCase().includes(term) ||
+                    kol.username.toLowerCase().includes(term)
+                );
+                filteredDataTier1 = allDataTier1.filter(kol => 
+                    kol.name.toLowerCase().includes(term) ||
+                    kol.username.toLowerCase().includes(term)
+                );
+                filteredDataTier2 = allDataTier2.filter(kol => 
+                    kol.name.toLowerCase().includes(term) ||
+                    kol.username.toLowerCase().includes(term)
+                );
+            }
+            renderAllLeaderboards();
+        }
+
+        // 切换时间周期
+        function switchPeriod(period) {
+            currentPeriod = period;
+            document.querySelectorAll('.period-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.getAttribute('data-period') === period) {
+                    tab.classList.add('active');
+                }
+            });
+            loadData();
+        }
+
+        // 从API加载数据
+        async function fetchDataFromAPI(tier, period) {
+            const apiUrl = API_CONFIGS[tier][period];
+            
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (!Array.isArray(data)) {
+                throw new Error('返回的数据格式不正确');
+            }
+
+            // 过滤有效数据
+            const validKOLs = data.filter(kol => 
+                (kol.name && kol.name.trim()) || 
+                (kol.username && kol.username.trim()) ||
+                (kol.user_id && kol.user_id.trim())
+            );
+
+            console.log(`加载${tier}-${period}: 原始${data.length}个, 过滤后${validKOLs.length}个`);
+
+            return validKOLs.map((kol, index) => normalizeKOLData(kol, index));
+        }
+
+        // 加载所有数据
+        async function loadData() {
+            const loadingState = document.getElementById('loadingState');
+            const errorState = document.getElementById('errorState');
+            const warningState = document.getElementById('warningState');
+            const leaderboardContainer = document.getElementById('leaderboardContainer');
+            const refreshBtn = document.getElementById('refresh-text');
+            
+            // 显示加载状态
+            loadingState.style.display = 'block';
+            errorState.style.display = 'none';
+            warningState.style.display = 'none';
+            leaderboardContainer.style.display = 'none';
+            refreshBtn.textContent = '🔄 加载中...';
+
+            try {
+                // 并行加载三个API的数据
+                const [legacyData, tier1Data, tier2Data] = await Promise.allSettled([
+                    fetchDataFromAPI('legacy', currentPeriod),
+                    fetchDataFromAPI('tier1', currentPeriod),
+                    fetchDataFromAPI('tier2', currentPeriod)
+                ]);
+
+                // 处理加载结果
+                allDataLegacy = legacyData.status === 'fulfilled' ? legacyData.value : SAMPLE_DATA.map((kol, index) => normalizeKOLData(kol, index));
+                allDataTier1 = tier1Data.status === 'fulfilled' ? tier1Data.value : SAMPLE_DATA.map((kol, index) => normalizeKOLData(kol, index));
+                allDataTier2 = tier2Data.status === 'fulfilled' ? tier2Data.value : SAMPLE_DATA.map((kol, index) => normalizeKOLData(kol, index));
+
+                filteredDataLegacy = [...allDataLegacy];
+                filteredDataTier1 = [...allDataTier1];
+                filteredDataTier2 = [...allDataTier2];
+                
+                // 隐藏加载状态，显示内容
+                loadingState.style.display = 'none';
+                
+                // 检查是否有API加载失败
+                const hasApiError = legacyData.status === 'rejected' || tier1Data.status === 'rejected' || tier2Data.status === 'rejected';
+                if (hasApiError) {
+                    warningState.style.display = 'block';
+                }
+                
+                // 渲染数据
+                renderAllLeaderboards();
+                
+                refreshBtn.textContent = '🔄 刷新数据';
+                
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                
+                // 使用备用数据
+                allDataLegacy = SAMPLE_DATA.map((kol, index) => normalizeKOLData(kol, index));
+                allDataTier1 = SAMPLE_DATA.map((kol, index) => normalizeKOLData(kol, index));
+                allDataTier2 = SAMPLE_DATA.map((kol, index) => normalizeKOLData(kol, index));
+                
+                filteredDataLegacy = [...allDataLegacy];
+                filteredDataTier1 = [...allDataTier1];
+                filteredDataTier2 = [...allDataTier2];
+                
+                loadingState.style.display = 'none';
+                warningState.style.display = 'block';
+                
+                renderAllLeaderboards();
+                
+                refreshBtn.textContent = '🔄 刷新数据';
+            }
+        }
+
+        // 多语言翻译配置
+        let currentLanguage = 'zh';
+        
+        const translations = {
+            zh: {
+                logo: "🍓 Boundless 简化排行榜",
+                pageTitle: "BOUNDLESS 排行榜",
+                period7d: "7天",
+                period30d: "30天",
+                period3m: "3个月",
+                period6m: "6个月",
+                period12m: "12个月",
+                searchPlaceholder: "搜索用户...",
+                loading: "正在加载数据...",
+                warning: "⚠️ API 连接失败，正在显示示例数据。",
+                errorTitle: "⚠️ 数据加载失败",
+                retry: "重试",
+                refresh: "🔄 刷新数据",
+                legacyTitle: "📊 老榜单",
+                tier1Title: "🤡 新榜单（满足门槛）",
+                tier2Title: "🌐 广泛社区（未满足门槛）",
+                rank: "排名",
+                avatar: "头像",
+                userInfo: "用户信息",
+                mindshare: "心智份额",
+                mentions: "提及次数"
+            },
+            en: {
+                logo: "🍓 Boundless Leaderboard",
+                pageTitle: "BOUNDLESS Leaderboard",
+                period7d: "7 Days",
+                period30d: "30 Days",
+                period3m: "3 Months",
+                period6m: "6 Months",
+                period12m: "12 Months",
+                searchPlaceholder: "Search User...",
+                loading: "Loading data...",
+                warning: "⚠️ API connection failed, showing sample data.",
+                errorTitle: "⚠️ Failed to load data",
+                retry: "Retry",
+                refresh: "🔄 Refresh",
+                legacyTitle: "📊 Old list",
+                tier1Title: "🤡 New list (meeting the threshold)",
+                tier2Title: "🌐 Broad Community (threshold not met)",
+                rank: "Rank",
+                avatar: "Avatar",
+                userInfo: "User Info",
+                mindshare: "Mindshare",
+                mentions: "Mentions"
+            }
+        };
+
+        // 切换语言
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'zh' ? 'en' : 'zh';
+            updateLanguage();
+        }
+
+        // 更新页面语言
+        function updateLanguage() {
+            const texts = translations[currentLanguage];
+            
+            // 更新所有带有 data-key 属性的元素
+            document.querySelectorAll('[data-key]').forEach(element => {
+                const key = element.getAttribute('data-key');
+                if (texts[key]) {
+                    element.textContent = texts[key];
+                }
+            });
+
+            // 更新 placeholder
+            document.querySelectorAll('[data-key-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-key-placeholder');
+                if (texts[key]) {
+                    element.placeholder = texts[key];
+                }
+            });
+
+            // 更新语言按钮状态
+            const langButton = document.querySelector('.lang-toggle');
+            const langText = document.getElementById('langText');
+            if (currentLanguage === 'en') {
+                langButton.classList.add('active');
+                langText.textContent = '中';
+            } else {
+                langButton.classList.remove('active');
+                langText.textContent = 'EN';
+            }
+        }
+
+        // 事件监听器
+        document.addEventListener('DOMContentLoaded', () => {
+            // 时间周期切换
+            document.querySelectorAll('.period-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const period = tab.getAttribute('data-period');
+                    switchPeriod(period);
+                });
+            });
+
+            // 搜索功能
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                filterData(e.target.value);
+            });
+
+            // 初始化语言
+            updateLanguage();
+
+            // 加载初始数据
+            loadData();
+        });
+    </script>
+</body>
+</html> 
